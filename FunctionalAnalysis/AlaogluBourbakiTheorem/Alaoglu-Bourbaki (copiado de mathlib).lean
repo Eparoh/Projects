@@ -2,7 +2,6 @@ import Mathlib.Topology.Instances.Real
 import Mathlib.Analysis.Normed.Module.Dual
 import Mathlib.Analysis.LocallyConvex.Polar
 import Mathlib.Analysis.Normed.Module.WeakDual
-import Nets.Nets_mathlib
 
 noncomputable section
 
