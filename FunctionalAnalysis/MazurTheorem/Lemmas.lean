@@ -39,69 +39,78 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
       dsimp [LinearMap.comp]
       rw [einkerg, LinearMap.map_zero]
     · intro kergsubkerf
-      let h'': (LinearMap.range g) → E := fun (f : LinearMap.range g) ↦ if h: ∃ (e: E), g e = f then Classical.choose h else 0
+      /- If we define h': g[E] → G as h' (g e) = f e, we have that it is well defined because given x ∈ g[E], if there exists
+         two different elements e₁, e₂ ∈ E with x = g e₁ and x = g e₂, then g (e₁ - e₂) = 0, so e₁ - e₂ ∈ Ker g ⊆ Ker f and we
+         obtain that f e₁ = f e₂. To conclude the proof we just have to extend h' to some linear map h: F → G.  -/
+      let s: (LinearMap.range g) → E := fun (x : LinearMap.range g) ↦ if h: ∃ (e: E), g e = x then Classical.choose h else 0 -- For every x ∈ g[E] we select an e ∈ E such that x = g e
       let h': (LinearMap.range g) →ₗ[𝕜] G := {
-        toFun := f ∘ h''
+        toFun := f ∘ s
         map_add' := by
           intro x x'
-          have cond1 := x.2
-          have cond2 := x'.2
+          simp
+          have xinrangeg := x.2
+          have x'inrangeg := x'.2
+          /- As the range of a linear map is a submodule we have that x+x' ∈ g[E] -/
+          have xx'inrangeg : (x.1 + x'.1) ∈ LinearMap.range g := by
+            rw [Submodule.add_mem_iff_right _ x.2]
+            exact x'.2
           rw [LinearMap.mem_range] at *
-          have cond3 : ∃ y, g y = x + x' := by
-            rcases cond1 with ⟨y₁, gy₁x⟩
-            rcases cond2 with ⟨y₂, gy₂x'⟩
-            use y₁ + y₂
-            rw [map_add, gy₁x, gy₂x']
-          dsimp [h'']
-          rw [dif_pos cond1, dif_pos cond2, dif_pos cond3]
-          have g1 := Classical.choose_spec cond1
-          have g2 := Classical.choose_spec cond2
-          have g3 := Classical.choose_spec cond3
-          have : choose cond3 - (choose cond1 + choose cond2) ∈ LinearMap.ker f := by
+          dsimp [s]
+          rw [dif_pos xinrangeg, dif_pos x'inrangeg, dif_pos xx'inrangeg] -- g (choose xinrangeg) = x, g (choose x'inrangeg) = x', g (choose xx'inrangeg) = x + x'
+          /- We have that g (choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg)) = 0 by the selection of these elements and
+             the linearity of g, so  choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ Ker g and, by assumption,
+             choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ Ker f.
+             By the linearity of f we conclude as wanted. -/
+          have : choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ LinearMap.ker f := by
             apply kergsubkerf
-            simp [g1, g2, g3]
+            simp [Classical.choose_spec xinrangeg, Classical.choose_spec x'inrangeg, Classical.choose_spec xx'inrangeg]
           rw [LinearMap.mem_ker, map_sub, map_add, sub_eq_zero] at this
           assumption
         map_smul' := by
           intro c x
-          have cond1 := x.2
-          rw [LinearMap.mem_range] at cond1
-          have cond2 : ∃ y, g y = c • x := by
-            rcases cond1 with ⟨y₁, gy₁x⟩
-            use c • y₁
-            rw [map_smul, gy₁x]
-          dsimp [h'']
-          rw [dif_pos cond1, dif_pos cond2]
-          have g1 := Classical.choose_spec cond1
-          have g2 := Classical.choose_spec cond2
-          have : choose cond2 - (c • choose cond1) ∈ LinearMap.ker f := by
+          simp
+          have xinrangeg := x.2
+          /- As the range of a linear map is a submodule we have that c • x ∈ g[E] -/
+          have cxinrangeg : c • x.1 ∈ LinearMap.range g := by
+            exact Submodule.smul_mem _ c x.2
+          rw [LinearMap.mem_range] at *
+          dsimp [s]
+          rw [dif_pos xinrangeg, dif_pos cxinrangeg] -- g (choose xinrangeg) = x, g (choose cxinrangeg) = c • x
+          /- We have that g (choose cxinrangeg - (c • choose xinrangeg)) = 0 by the selection of these elements and
+             the linearity of g, so choose cxinrangeg - (c • choose xinrangeg) ∈ Ker g and, by assumption,
+             choose cxinrangeg - (c • choose xinrangeg) ∈ Ker f.
+             By the linearity of f we conclude as wanted. -/
+          have : choose cxinrangeg - (c • choose xinrangeg) ∈ LinearMap.ker f := by
             apply kergsubkerf
-            simp [g1, g2]
+            simp [Classical.choose_spec xinrangeg, Classical.choose_spec cxinrangeg]
           rw [LinearMap.mem_ker, map_sub, map_smul, sub_eq_zero] at this
           assumption
           }
+      /- We have that h' (g e) = f (s (g e)) = f e -/
       have eqcomp : ∀ (e: E), f e = h' (⟨g e, by rw [LinearMap.mem_range]; use e⟩) := by
         intro e
-        dsimp [h', h'']
-        have cond : ∃ e_1, g e_1 = g e := by
+        dsimp [h', s]
+        have cond : ∃ e', g e' = g e := by
           use e
-        rw [dif_pos cond]
-        have := Classical.choose_spec cond
+        rw [dif_pos cond] -- g (choose cond) = g e
+        /- To obtain the desired result it is enough to prove that e - (choose cond) ∈ Ker f and, by assumption, it is enough
+           to prove that e - (choose cond) ∈ Ker g, which is true by the selection done. -/
         have : choose cond - e ∈ LinearMap.ker f := by
           apply kergsubkerf
-          simp [this]
+          simp [Classical.choose_spec cond]
         rw [LinearMap.mem_ker, map_sub, sub_eq_zero] at this
         exact this.symm
-      have extension : ∃ (h: F →ₗ[𝕜] G), ∀ (x: {x : F // x ∈ LinearMap.range g}), h x.1 = h' x := by
+      /- We define the linear extension of h' -/
+      have extension : ∃ (h: F →ₗ[𝕜] G), ∀ (x : LinearMap.range g), h x.1 = h' x := by
         rcases LinearMap.exists_extend h' with ⟨h, hcircinceqh'⟩
         use h
         intro x
         rw [← hcircinceqh']
-        dsimp
+        rfl
       rcases extension with ⟨h, hexth'⟩
       use h
       ext e
-      simp [LinearMap.comp]
+      simp
       rw [hexth' ⟨g e, by rw [LinearMap.mem_range]; use e⟩]
       exact eqcomp e
 
