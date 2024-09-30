@@ -9,29 +9,32 @@ noncomputable section
 open Set Filter Topology Classical Function Defs
 
 set_option linter.unusedVariables false
+set_option trace.Meta.Tactic.simp false
 
 namespace Lemmas
 
+/- Evaluation of a partial function if the condition is satisfied. -/
 lemma eval_pos (p : α → Prop) (f g : α → β) {a : α} (h: p a) : partial_fun p f g a = f a := by
-  dsimp [partial_fun]
-  simp
+  rw [partial_fun, ite_eq_then]
   intro npn
   contradiction
 
+/- Evaluation of a partial function if the condition is not satisfied. -/
 lemma eval_neg (p : α → Prop) (f g : α → β) {a : α} (h: ¬p a) : partial_fun p f g a = g a := by
-  dsimp [partial_fun]
-  simp
+  rw [partial_fun, ite_eq_else]
   intro npn
   contradiction
 
+/- Lemma: Let E, F, G be vector spaces over a field 𝕜 and f: E → G, g: E → F linear maps. Then, it exists a linear map h: F → G
+          such that f = h ∘ g if, and only if, Ker g ⊆ Ker f -/
 lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [AddCommGroup F] [AddCommGroup G] [Module 𝕜 E] [Module 𝕜 F] [Module 𝕜 G]
   (f: E →ₗ[𝕜] G) (g: E →ₗ[𝕜] F) : (∃ (h: F →ₗ[𝕜] G), f = h ∘ₗ g) ↔ {e | e ∈ LinearMap.ker g} ⊆ {e | e ∈ LinearMap.ker f} := by
     constructor
     · intro existence
       rcases existence with ⟨h, feqhg⟩
       intro e einkerg
-      dsimp at *
-      rw [LinearMap.mem_ker] at *
+      /- If e ∈ Ker g, then g e = 0, so f e = h (g e) = h 0 = 0 as h is a linear map. -/
+      simp at *
       rw [feqhg]
       dsimp [LinearMap.comp]
       rw [einkerg, LinearMap.map_zero]
@@ -56,8 +59,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
           have g3 := Classical.choose_spec cond3
           have : choose cond3 - (choose cond1 + choose cond2) ∈ LinearMap.ker f := by
             apply kergsubkerf
-            dsimp
-            rw [LinearMap.mem_ker, map_sub, sub_eq_zero, map_add, g1, g2, g3]
+            simp [g1, g2, g3]
           rw [LinearMap.mem_ker, map_sub, map_add, sub_eq_zero] at this
           assumption
         map_smul' := by
@@ -74,8 +76,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
           have g2 := Classical.choose_spec cond2
           have : choose cond2 - (c • choose cond1) ∈ LinearMap.ker f := by
             apply kergsubkerf
-            dsimp
-            rw [LinearMap.mem_ker, map_sub, sub_eq_zero, map_smul, g1, g2]
+            simp [g1, g2]
           rw [LinearMap.mem_ker, map_sub, map_smul, sub_eq_zero] at this
           assumption
           }
@@ -88,9 +89,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
         have := Classical.choose_spec cond
         have : choose cond - e ∈ LinearMap.ker f := by
           apply kergsubkerf
-          dsimp
-          rw [LinearMap.mem_ker, map_sub, sub_eq_zero]
-          assumption
+          simp [this]
         rw [LinearMap.mem_ker, map_sub, sub_eq_zero] at this
         exact this.symm
       have extension : ∃ (h: F →ₗ[𝕜] G), ∀ (x: {x : F // x ∈ LinearMap.range g}), h x.1 = h' x := by
@@ -107,7 +106,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
       exact eqcomp e
 
 lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] (f: E →ₗ[𝕂] 𝕂) (F: Finset (E →ₗ[𝕂] 𝕂)):
-  f ∈ Submodule.span 𝕂 F ↔ ⋂ g ∈ F, {e | e ∈ LinearMap.ker g} ⊆ {e | e ∈ LinearMap.ker f} := by
+  f ∈ Submodule.span 𝕂 F ↔ ⋂ g ∈ F, LinearMap.ker g ⊆ {e | e ∈ LinearMap.ker f} := by
     constructor
     · intro finspan
       rw [mem_span_finset] at finspan
@@ -116,14 +115,13 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕂: Type*} [RCLike 𝕂] [AddC
       simp only [mem_iInter] at eininter
       dsimp
       rw [LinearMap.mem_ker]
-      dsimp at eininter
+      simp at eininter
       have := congr_arg (fun (g: E →ₗ[𝕂] 𝕂) ↦ g e) feqsum
       dsimp at this
       rw [← this]
       have : ∀ i ∈ F, ((u i) • i) e = 0 := by
         intro i iinF
         have := eininter i iinF
-        rw [LinearMap.mem_ker] at this
         dsimp
         rw [this, mul_zero]
       rw [LinearMap.sum_apply]
@@ -148,17 +146,14 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕂: Type*} [RCLike 𝕂] [AddC
           ext i
           exact (T i).1.map_smul' c e
         }
-      have :  ⋂ g ∈ F, {e | e ∈ LinearMap.ker g} = {e | e ∈ LinearMap.ker r} := by
+      have :  ⋂ g ∈ F, LinearMap.ker g = {e | e ∈ LinearMap.ker r} := by
         ext e
         constructor
         · intro eininter
-          simp only [mem_iInter] at eininter
-          dsimp at *
-          rw [LinearMap.mem_ker]
-          ext i
+          simp at *
           dsimp [r]
+          ext i
           have := eininter (T i) (T i).2
-          rw [LinearMap.mem_ker] at this
           assumption
         · intro einkerr
           simp only [mem_iInter]
@@ -171,6 +166,7 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕂: Type*} [RCLike 𝕂] [AddC
           dsimp [j] at this
           have aux := congr_arg (fun (x: F) ↦ x.1 e) (Equiv.apply_symm_apply T ⟨i, iinF⟩)
           dsimp at aux
+          simp
           rw [← aux, this]
       rw [this, ← exist_comp_iff_ker_sub] at h
       rcases h with ⟨h, feqhr⟩
