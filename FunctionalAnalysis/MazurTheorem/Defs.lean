@@ -8,24 +8,10 @@ open Set Filter Topology Classical Function
 
 set_option linter.unusedVariables false
 
-/- Instance for substraction in X for the weak topology -/
-instance WeakSpace.instHSub {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]:
-  HSub (WeakSpace 𝕂 X) (WeakSpace 𝕂 X) (WeakSpace 𝕂 X) where
-    hSub := by
-      dsimp only [WeakSpace, WeakBilin]
-      exact fun x y ↦ x - y
-
-/- Instance for substraction in X* for the weak* topology -/
-instance WeakDual.instHSub {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]:
-  HSub (WeakDual 𝕂 X) (WeakDual 𝕂 X) (WeakDual 𝕂 X) where
-    hSub := by
-      dsimp only [WeakDual, WeakBilin]
-      exact fun x y ↦ x - y
-
 namespace Defs
 
 /- Definition for a function defined by pieces -/
-def partial_fun {α β: Type} (p : α → Prop) (f g : α → β) : α → β := fun (a: α) ↦
+def partial_fun {α β: Type*} (p : α → Prop) (f g : α → β) : α → β := fun (a: α) ↦
   if p a then
     f a
   else

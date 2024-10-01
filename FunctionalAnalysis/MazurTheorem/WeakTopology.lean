@@ -16,6 +16,20 @@ set_option linter.unusedVariables false
 
 universe u
 
+/- Instance for substraction in X for the weak topology -/
+instance WeakSpace.instHSub {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]:
+  HSub (WeakSpace 𝕂 X) (WeakSpace 𝕂 X) (WeakSpace 𝕂 X) where
+    hSub := by
+      dsimp only [WeakSpace, WeakBilin]
+      exact fun x y ↦ x - y
+
+/- Instance for substraction in X* for the weak* topology -/
+instance WeakDual.instHSub {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]:
+  HSub (WeakDual 𝕂 X) (WeakDual 𝕂 X) (WeakDual 𝕂 X) where
+    hSub := by
+      dsimp only [WeakDual, WeakBilin]
+      exact fun x y ↦ x - y
+
 /- Basis for weak topologies -/
 
 theorem weak_basis_general {E F 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] [AddCommGroup F] [Module 𝕂 F]

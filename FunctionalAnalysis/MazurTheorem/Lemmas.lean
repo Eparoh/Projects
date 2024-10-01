@@ -11,8 +11,6 @@ open Set Filter Topology Classical Function Defs
 set_option linter.unusedVariables false
 set_option trace.Meta.Tactic.simp false
 
-namespace Lemmas
-
 /- Evaluation of a partial function if the condition is satisfied. -/
 lemma eval_pos (p : α → Prop) (f g : α → β) {a : α} (h: p a) : partial_fun p f g a = f a := by
   rw [partial_fun, ite_eq_then]
@@ -85,7 +83,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
             simp [Classical.choose_spec xinrangeg, Classical.choose_spec cxinrangeg]
           rw [LinearMap.mem_ker, map_sub, map_smul, sub_eq_zero] at this
           assumption
-          }
+      }
       /- We have that h' (g e) = f (s (g e)) = f e -/
       have eqcomp : ∀ (e: E), f e = h' (⟨g e, by rw [LinearMap.mem_range]; use e⟩) := by
         intro e
@@ -114,110 +112,96 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
       rw [hexth' ⟨g e, by rw [LinearMap.mem_range]; use e⟩]
       exact eqcomp e
 
-lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] (f: E →ₗ[𝕂] 𝕂) (F: Finset (E →ₗ[𝕂] 𝕂)):
-  f ∈ Submodule.span 𝕂 F ↔ ⋂ g ∈ F, LinearMap.ker g ⊆ {e | e ∈ LinearMap.ker f} := by
+/- Lemma: Let E be a vector space over a field 𝕜, f: E → 𝕜 a linear functional and F a finite set of lineal functionals over E.
+          Then, f is a linear combination of the elements of F if, and only if, the intersection of the kernel of the elements of F
+          is contained in the kernel of f. -/
+lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [Module 𝕜 E] (f: E →ₗ[𝕜] 𝕜) (F: Finset (E →ₗ[𝕜] 𝕜)):
+  f ∈ Submodule.span 𝕜 F ↔ ⋂ g ∈ F, {e | e ∈ LinearMap.ker g} ⊆ {e | e ∈ LinearMap.ker f} := by
     constructor
     · intro finspan
+      /- If f ∈ span F, then there exists some u: (E →ₗ[𝕜] 𝕜) → 𝕜 such that f = ∑ g ∈ F, (u g) • g.
+         Then, if e ∈ ⋂ g ∈ F, Ker g, we obtain that g e = 0 for every g ∈ F and so f e = ∑ g ∈ F, (u g) • (g e) = 0, from where
+         we conclude that e ∈ Ker f. -/
       rw [mem_span_finset] at finspan
       rcases finspan with ⟨u, feqsum⟩
       intro e eininter
-      simp only [mem_iInter] at eininter
-      dsimp
-      rw [LinearMap.mem_ker]
       simp at eininter
-      have := congr_arg (fun (g: E →ₗ[𝕂] 𝕂) ↦ g e) feqsum
-      dsimp at this
-      rw [← this]
-      have : ∀ i ∈ F, ((u i) • i) e = 0 := by
+      dsimp
+      rw [LinearMap.mem_ker, ← feqsum]
+      simp
+      have : ∀ i ∈ F, (u i) * (i e) = 0 := by
         intro i iinF
-        have := eininter i iinF
-        dsimp
-        rw [this, mul_zero]
-      rw [LinearMap.sum_apply]
+        rw [eininter i iinF, mul_zero]
       exact Finset.sum_eq_zero this
-    · intro h
-      have : ∀ (t : E →ₗ[𝕂] 𝕂), t ∈ F ↔ t ∈ (Finset.toSet F) := by
-        intro t
-        rfl
-      have Ffinite := Set.Finite.ofFinset F this
-      rw [← Set.finite_coe_iff, finite_iff_exists_equiv_fin] at Ffinite
-      rcases Ffinite with ⟨n, eq⟩
-      rcases eq with ⟨T⟩
-      have T := T.symm
-      let r : E →ₗ[𝕂] (Fin n → 𝕂) := {
-        toFun := fun e ↦ (fun i ↦ (T i).1 e)
+    · intro intersubkerf
+      /- We can apply the lemma "exist_comp_iff_ker_sub" to E, 𝕜ⁿ, 𝕜, f and t = (F₁, ⋯, Fₙ) (where F₁, ⋯, Fₙ are the elements
+         of F) to obtain a linear map h: 𝕜ⁿ → 𝕜 such that f = h ∘ₗ t. In fact, if e ∈ Ker t, then e ∈ ⋂ g ∈ F, Ker g and so by
+         assumption, e ∈ Ker f. Then, we can write h (y₁, ..., yₙ) = ∑ yᵢ * (h (yᵢ • eᵢ)) (with eᵢ the canonical basis) for some
+         and then we obtain that for every e ∈ E,
+         f e = h (t e) = h (F₁ e, ⋯, Fₙ e) = ∑ h ((Fᵢ e) • eᵢ) * (Fᵢ e), so we obtain that f ∈ span F. -/
+      let F' := Finset.toSet F -- We coerce F to be a set
+      /- F' is finite and so we can obtain a bijection b: Fin n → F' for some natural number n -/
+      have F'fin:= @Set.Finite.ofFinset _ F' F (by intro x; rfl)
+      rw [← Set.finite_coe_iff, finite_iff_exists_equiv_fin] at F'fin
+      rcases F'fin with ⟨n, eq⟩
+      rcases eq with ⟨b⟩
+      have b := b.symm -- It is more convenient to have Fin n as the domain
+      let asdf := Subtype.val ∘ b.toFun
+      /- We will now define t: E →ₗ[𝕜] (Fin n → 𝕜) -/
+      let t: E →ₗ[𝕜] (Fin n → 𝕜) := {
+        toFun := fun e ↦ (fun i ↦ (Subtype.val ∘ b) i e)
         map_add' := by
           intro e e'
+          simp only [map_add]
           ext i
-          exact (T i).1.map_add' e e'
+          rfl
         map_smul' := by
           intro c e
+          simp only [map_smul, RingHom.id_apply]
           ext i
-          exact (T i).1.map_smul' c e
-        }
-      have :  ⋂ g ∈ F, LinearMap.ker g = {e | e ∈ LinearMap.ker r} := by
-        ext e
-        constructor
-        · intro eininter
-          simp at *
-          dsimp [r]
-          ext i
-          have := eininter (T i) (T i).2
-          assumption
-        · intro einkerr
-          simp only [mem_iInter]
-          intro i iinF
-          dsimp at *
-          rw [LinearMap.mem_ker] at *
-          dsimp [r] at einkerr
-          let j : Fin n := T.invFun ⟨i, iinF⟩
-          have := congr_arg (fun (t: Fin n → 𝕂) ↦ t j) einkerr
-          dsimp [j] at this
-          have aux := congr_arg (fun (x: F) ↦ x.1 e) (Equiv.apply_symm_apply T ⟨i, iinF⟩)
-          dsimp at aux
-          simp
-          rw [← aux, this]
-      rw [this, ← exist_comp_iff_ker_sub] at h
-      rcases h with ⟨h, feqhr⟩
-      rw [feqhr]
-      rw [mem_span_set']
-      use n
-      let R : Fin n → (Fin n → 𝕂) := fun i ↦ (fun (j : Fin n) ↦ partial_fun (fun (j : Fin n) ↦ j = i)
-        (fun (j : Fin n) ↦ (1: ℝ)) (fun (j: Fin n) ↦ (0: ℝ)) j)
-      have generator : ∀ (t: Fin n → 𝕂), t = ∑ i : Fin n, (t i) • R i := by
-        intro t
-        ext j
-        have : (∑ i : Fin n, (t i) • R i) j =  ∑ i : Fin n, (t i) • (R i j) := by
-          simp
-        rw [this]
-        have : j ∈ Finset.univ := by
-          exact Finset.mem_univ j
-        have := Finset.sum_erase_add Finset.univ (fun (i: Fin n) ↦ t i • R i j) this
-        rw [← this]
-        dsimp
-        have : ∀ i ∈ Finset.univ.erase j, t i * R i j = 0 := by
-          intro i iinerase
-          rw [Finset.mem_erase] at iinerase
-          dsimp [R]
-          rw [eval_neg]
-          · norm_cast
-            rw [mul_zero]
-          · exact iinerase.1.symm
+          rfl
+      }
+      /- We'll show that Ker t ⊆ Ker f to apply "exist_comp_iff_ker_sub" and obtain a linear map h: 𝕜ⁿ → 𝕜 such that f = h ∘ₗ t. -/
+      have kertsubkerf : {e | e ∈ LinearMap.ker t} ⊆ {e | e ∈ LinearMap.ker f} := by
+        intro e einkert
+        apply intersubkerf
+        simp at *
+        intro g ginF
+        have : t e (b.invFun ⟨g, ginF⟩) = g e := by
+          dsimp [t]
+          rw [Equiv.apply_symm_apply]
+        rw [← this, einkert]
+        rfl
+      rcases (exist_comp_iff_ker_sub f t).mpr kertsubkerf with ⟨h, feqht⟩
+      /- We define the canonical basis of 𝕜ⁿ and show that for any r ∈ 𝕜ⁿ we have that r = ∑ i: Fin n, r i * canbasis i -/
+      let canbasis : Fin n → (Fin n → 𝕜) := fun i ↦ partial_fun (fun (j: Fin n) ↦ i = j) (fun (j: Fin n) ↦ (1: 𝕜)) (fun (j: Fin n) ↦ (0 : 𝕜))
+      have basisdec : ∀ (r: Fin n → 𝕜), r = ∑ i: Fin n, r i • canbasis i := by
+        intro r
+        ext i
+        simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+        rw [← Finset.sum_erase_add _ _ (Finset.mem_univ i)]
+        have : ∀ x ∈ (Finset.univ.erase i), r x * canbasis x i = 0 := by
+          intro x xinerasei
+          rw [Finset.mem_erase] at xinerasei
+          dsimp [canbasis]
+          rw [eval_neg, mul_zero]
+          exact xinerasei.1
         rw [Finset.sum_eq_zero this, zero_add]
-        dsimp [R]
-        rw [eval_pos]
-        · norm_cast
-          rw [mul_one]
-        · rfl
-      use h ∘ R, T
+        dsimp [canbasis]
+        rw [eval_pos, mul_one]
+        rfl
+      rw [mem_span_set', feqht]
+      /- We have that given any e ∈ E,
+         h (t e) = h (∑ i: Fin n, ((t e) i) • canbasis i) = ∑ i: Fin n, (t e i) * h (canbasis i) =
+         = ∑ i: Fin n, (h ∘ canbasis) i * (t e i) = ∑ i: Fin n, (h ∘ canbasis) i * ((b i).1 e) =
+         = ∑ i: Fin n, (h ∘ canbasis) i * ((Subtype.val ∘ b) i e) = (∑ i: Fin n, (h ∘ canbasis) i • (Subtype.val ∘ b) i) e. -/
+      use n, h ∘ canbasis, b.toFun
       ext e
-      dsimp [LinearMap.comp]
-      rw [generator (r e), map_sum, LinearMap.sum_apply]
-      apply Finset.sum_congr
-      · rfl
-      · intro i iinuniv
-        simp [r]
-        rw [mul_comm]
+      simp
+      rw [basisdec (t e)]
+      simp only [map_sum, map_smul, smul_eq_mul]
+      dsimp [t]
+      simp only [mul_comm]
 
 theorem exists_ball_subset_family {ι : Type*} (X: Type*) [MetricSpace X] (I : Finset ι) (f : ι → X) (u : ι → Set X)
     (h: ∀ i ∈ I, ∃ (t : ℝ), (0 < t ∧ Metric.ball (f i) t ⊆ u i)):
