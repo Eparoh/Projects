@@ -1,15 +1,18 @@
-import Mathlib.Topology.Instances.Real
 import Mathlib.Algebra.Module.Submodule.Basic
-import Mathlib.Analysis.Normed.Module.Dual
+import Mathlib.LinearAlgebra.Basis.VectorSpace
 import FunctionalAnalysis.MazurTheorem.Defs
 import Topology.Nets.Nets
 
 noncomputable section
 
-open Set Filter Topology Classical Function Defs
+open Set Topology Classical Function LinearMap Defs
 
 set_option linter.unusedVariables false
 set_option trace.Meta.Tactic.simp false
+
+namespace Lemmas
+
+/- ### Lemas for evaluation of partial functions ### -/
 
 /- Evaluation of a partial function if the condition is satisfied. -/
 lemma eval_pos (p : α → Prop) (f g : α → β) {a : α} (h: p a) : partial_fun p f g a = f a := by
@@ -23,10 +26,12 @@ lemma eval_neg (p : α → Prop) (f g : α → β) {a : α} (h: ¬p a) : partial
   intro npn
   contradiction
 
+/- ### Lemas from linear algebra ### -/
+
 /- Lemma: Let E, F, G be vector spaces over a field 𝕜 and f: E → G, g: E → F linear maps. Then, it exists a linear map h: F → G
           such that f = h ∘ g if, and only if, Ker g ⊆ Ker f -/
 lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [AddCommGroup F] [AddCommGroup G] [Module 𝕜 E] [Module 𝕜 F] [Module 𝕜 G]
-  (f: E →ₗ[𝕜] G) (g: E →ₗ[𝕜] F) : (∃ (h: F →ₗ[𝕜] G), f = h ∘ₗ g) ↔ {e | e ∈ LinearMap.ker g} ⊆ {e | e ∈ LinearMap.ker f} := by
+  (f: E →ₗ[𝕜] G) (g: E →ₗ[𝕜] F) : (∃ (h: F →ₗ[𝕜] G), f = h ∘ₗ g) ↔ {e | e ∈ ker g} ⊆ {e | e ∈ ker f} := by
     constructor
     · intro existence
       rcases existence with ⟨h, feqhg⟩
@@ -35,7 +40,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
       simp at *
       rw [feqhg]
       dsimp [LinearMap.comp]
-      rw [einkerg, LinearMap.map_zero]
+      rw [einkerg, map_zero]
     · intro kergsubkerf
       /- If we define h': g[E] → G as h' (g e) = f e, we have that it is well defined because given x ∈ g[E], if there exists
          two different elements e₁, e₂ ∈ E with x = g e₁ and x = g e₂, then g (e₁ - e₂) = 0, so e₁ - e₂ ∈ Ker g ⊆ Ker f and we
@@ -59,10 +64,10 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
              the linearity of g, so  choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ Ker g and, by assumption,
              choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ Ker f.
              By the linearity of f we conclude as wanted. -/
-          have : choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ LinearMap.ker f := by
+          have : choose xx'inrangeg - (choose xinrangeg + choose x'inrangeg) ∈ ker f := by
             apply kergsubkerf
             simp [Classical.choose_spec xinrangeg, Classical.choose_spec x'inrangeg, Classical.choose_spec xx'inrangeg]
-          rw [LinearMap.mem_ker, map_sub, map_add, sub_eq_zero] at this
+          rw [mem_ker, map_sub, map_add, sub_eq_zero] at this
           assumption
         map_smul' := by
           intro c x
@@ -78,10 +83,10 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
              the linearity of g, so choose cxinrangeg - (c • choose xinrangeg) ∈ Ker g and, by assumption,
              choose cxinrangeg - (c • choose xinrangeg) ∈ Ker f.
              By the linearity of f we conclude as wanted. -/
-          have : choose cxinrangeg - (c • choose xinrangeg) ∈ LinearMap.ker f := by
+          have : choose cxinrangeg - (c • choose xinrangeg) ∈ ker f := by
             apply kergsubkerf
             simp [Classical.choose_spec xinrangeg, Classical.choose_spec cxinrangeg]
-          rw [LinearMap.mem_ker, map_sub, map_smul, sub_eq_zero] at this
+          rw [mem_ker, map_sub, map_smul, sub_eq_zero] at this
           assumption
       }
       /- We have that h' (g e) = f (s (g e)) = f e -/
@@ -93,14 +98,14 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
         rw [dif_pos cond] -- g (choose cond) = g e
         /- To obtain the desired result it is enough to prove that e - (choose cond) ∈ Ker f and, by assumption, it is enough
            to prove that e - (choose cond) ∈ Ker g, which is true by the selection done. -/
-        have : choose cond - e ∈ LinearMap.ker f := by
+        have : choose cond - e ∈ ker f := by
           apply kergsubkerf
           simp [Classical.choose_spec cond]
-        rw [LinearMap.mem_ker, map_sub, sub_eq_zero] at this
+        rw [mem_ker, map_sub, sub_eq_zero] at this
         exact this.symm
       /- We define the linear extension of h' -/
       have extension : ∃ (h: F →ₗ[𝕜] G), ∀ (x : LinearMap.range g), h x.1 = h' x := by
-        rcases LinearMap.exists_extend h' with ⟨h, hcircinceqh'⟩
+        rcases exists_extend h' with ⟨h, hcircinceqh'⟩
         use h
         intro x
         rw [← hcircinceqh']
@@ -116,7 +121,7 @@ lemma exist_comp_iff_ker_sub {E F G 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [
           Then, f is a linear combination of the elements of F if, and only if, the intersection of the kernel of the elements of F
           is contained in the kernel of f. -/
 lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕜: Type*} [Field 𝕜] [AddCommGroup E] [Module 𝕜 E] (f: E →ₗ[𝕜] 𝕜) (F: Finset (E →ₗ[𝕜] 𝕜)):
-  f ∈ Submodule.span 𝕜 F ↔ ⋂ g ∈ F, {e | e ∈ LinearMap.ker g} ⊆ {e | e ∈ LinearMap.ker f} := by
+  f ∈ Submodule.span 𝕜 F ↔ ⋂ g ∈ F, {e | e ∈ ker g} ⊆ {e | e ∈ ker f} := by
     constructor
     · intro finspan
       /- If f ∈ span F, then there exists some u: (E →ₗ[𝕜] 𝕜) → 𝕜 such that f = ∑ g ∈ F, (u g) • g.
@@ -127,7 +132,7 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕜: Type*} [Field 𝕜] [AddCo
       intro e eininter
       simp at eininter
       dsimp
-      rw [LinearMap.mem_ker, ← feqsum]
+      rw [mem_ker, ← feqsum]
       simp
       have : ∀ i ∈ F, (u i) * (i e) = 0 := by
         intro i iinF
@@ -162,7 +167,7 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕜: Type*} [Field 𝕜] [AddCo
           rfl
       }
       /- We'll show that Ker t ⊆ Ker f to apply "exist_comp_iff_ker_sub" and obtain a linear map h: 𝕜ⁿ → 𝕜 such that f = h ∘ₗ t. -/
-      have kertsubkerf : {e | e ∈ LinearMap.ker t} ⊆ {e | e ∈ LinearMap.ker f} := by
+      have kertsubkerf : {e | e ∈ ker t} ⊆ {e | e ∈ ker f} := by
         intro e einkert
         apply intersubkerf
         simp at *
@@ -202,6 +207,24 @@ lemma mem_submodule_iff_inter_of_ker_sub_ker {E 𝕜: Type*} [Field 𝕜] [AddCo
       simp only [map_sum, map_smul, smul_eq_mul]
       dsimp [t]
       simp only [mul_comm]
+
+/- ### Lemas from topology ### -/
+
+/- Theorem: Let Y be a topological space and f: X → Y a map. The topology in X induced by f is the coarsest topology on f
+            that makes f continuous. -/
+theorem induced_coarsest {X Y: Type*} (f: X → Y) [tY: TopologicalSpace Y] (tX: TopologicalSpace X):
+  @Continuous X Y tX tY f → ∀ (s: Set X), @IsOpen X (TopologicalSpace.induced f tY) s → @IsOpen X tX s := by
+    intro f_tcont s s_iopen
+    /- As s is open in the induced topology by f, we have that there exists an open set V in Y such that s = f ⁻¹' V.
+       On the other hand, as f is continuous when we consider the topology tX in X, we have that f ⁻¹' V is an open set in for
+       the topology tX, but then so is s. -/
+    rw [isOpen_induced_iff] at s_iopen
+    rcases s_iopen with ⟨V, Vopen, seqpreV⟩
+    rw [continuous_def] at f_tcont
+    rw [← seqpreV]
+    exact f_tcont V Vopen
+
+/- FALTA COMENTAR -/
 
 theorem exists_ball_subset_family {ι : Type*} (X: Type*) [MetricSpace X] (I : Finset ι) (f : ι → X) (u : ι → Set X)
     (h: ∀ i ∈ I, ∃ (t : ℝ), (0 < t ∧ Metric.ball (f i) t ⊆ u i)):

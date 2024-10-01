@@ -1,6 +1,5 @@
 import Mathlib.Topology.Instances.Real
-import Mathlib.Analysis.Normed.Module.Dual
-import Mathlib.Analysis.Normed.Module.WeakDual
+import Mathlib.Analysis.RCLike.Basic
 
 noncomputable section
 
@@ -32,4 +31,4 @@ def DualPair {E F 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] [A
                We say that τ is compatible with the bilinear form B if (E, τ)* = B.flip [F]. -/
 def CompatibleTopology {E F 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] [AddCommGroup F] [Module 𝕂 F]
   (B: E →ₗ[𝕂] F →ₗ[𝕂] 𝕂) (t: TopologicalSpace E) : Prop :=
-    ∀ (g: E→ₗ[𝕂] 𝕂), Continuous g ↔ g ∈ range (fun (f: F) ↦ B.flip f)
+    ∀ (g: E→ₗ[𝕂] 𝕂), Continuous g ↔ g ∈ range B.flip
