@@ -5,7 +5,6 @@ noncomputable section
 open Set Filter Topology Classical Function
 
 set_option linter.unusedVariables false
-set_option linter.simpsNoConstructor false
 
 universe u
 
@@ -221,8 +220,6 @@ def DirectedSet.instFiniteInterLeft {X F: Type*} {A: F → Set X} (K := univ) : 
       constructor
       · apply inter_subset_left
       · apply inter_subset_right
-
--- Composition of a function with a net is a net
 
 
 namespace Net
