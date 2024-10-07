@@ -2,8 +2,6 @@ import Mathlib.Topology.Instances.Real
 
 noncomputable section
 
-set_option trace.Meta.Tactic.simp false
-
 open Set Filter Topology Classical Function
 
 /- ### Class ### -/
