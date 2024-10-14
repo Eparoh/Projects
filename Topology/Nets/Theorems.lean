@@ -1,4 +1,5 @@
 import Topology.Nets.Filter
+import Mathlib.Topology.UniformSpace.Cauchy
 
 noncomputable section
 
@@ -242,3 +243,27 @@ theorem t2_iff_net_unique_limit {X : Type*} [TopologicalSpace X] :
     · intro cond F Fnebot x y limitFx limitFy
       rw [limit_filter_iff_net] at *
       exact cond (DirectedSetF F) (DirectedSetF.isntDirectedSet F) (NetF F) x y limitFx limitFy
+
+/- A uniform space is complete iff is CompleteNet -/
+theorem complete_iff_netcomplete {X: Type*} [UniformSpace X]:
+  CompleteSpace X ↔ CompleteNet X := by
+    constructor
+    · intro completeX
+      unfold CompleteNet
+      intro D h s cauchys
+      rcases completeX.complete ((cauchy_net_iff_filter s).mp cauchys) with ⟨x, limitFx⟩
+      use x
+      rw [limit_net_iff_filter]
+      assumption
+    · intro completeX
+      unfold CompleteNet at completeX
+      apply completeSpace_of_isComplete_univ
+      unfold IsComplete
+      intro F cauchyF _
+      rcases completeX (DirectedSetF F) (@DirectedSetF.isntDirectedSet X F cauchyF.1) (NetF F)
+        ((@cauchy_filter_iff_net X _ F cauchyF.1).mp cauchyF) with ⟨x, limitsx⟩
+      use x
+      constructor
+      · exact mem_univ x
+      · rw [@limit_filter_iff_net X _ F cauchyF.1 x]
+        assumption

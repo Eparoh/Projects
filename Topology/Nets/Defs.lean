@@ -22,3 +22,12 @@ def ClusterPoint {X D: Type*} [TopologicalSpace X] [DirectedSet D] (s: D → X) 
    With cofinal we mean that given any d in D, there exists an e₀ in E such that for any e in E, if e₀ ≤ e then d ≤ i e. -/
 def Subnet {X D E: Type*} [DirectedSet D] [DirectedSet E] (s: D → X) (s': E → X) : Prop :=
   ∃ (i: E → D), (∀ (d : D), ∃ (e₀ : E), ∀ (e : E), (e₀ ≤ e →  d ≤ (i e))) ∧ s' = s ∘ i
+
+/- We say that a net s: D → X on a uniform space X is Cauchy if for every U in the uniformity
+   of X thre exists some d₀ in I such that (s d, s e) ∈ U for all d₀ ≤ d, e -/
+def CauchyNet {X D: Type*} [DirectedSet D] [UniformSpace X] (s: D → X): Prop :=
+   ∀ U ∈ uniformity X, ∃ (d₀: D), ∀ (d e: D), (d₀ ≤ d → d₀ ≤ e → (s d, s e) ∈ U)
+
+/- We say that a uniform space X is complete if every cauchy net in it converges -/
+def CompleteNet (X: Type*) [UniformSpace X]: Prop :=
+   ∀ (D: Type u_1) (_: DirectedSet D) (s : D → X), (CauchyNet s → ∃ (x: X), Limit s x)

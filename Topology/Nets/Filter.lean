@@ -1,4 +1,5 @@
 import Topology.Nets.Basic
+import Mathlib.Topology.UniformSpace.Cauchy
 
 noncomputable section
 
@@ -117,6 +118,44 @@ lemma net_in_set_implies_set_in_filter {X: Type*} [TopologicalSpace X] (A: Set X
     rw [← sdeqx]
     exact sinA d
 
+/- We also have that given a net s: D → X with X a uniform space, it is satisfied that s is Cauchy if, and only
+   if, the associated filter is Cauchy. -/
+lemma cauchy_net_iff_filter {X D: Type*} [UniformSpace X] [DirectedSet D] (s : D → X):
+  CauchyNet s ↔ Cauchy (FNet s) := by
+    constructor
+    · intro cauchys
+      rw [cauchy_iff']
+      unfold CauchyNet at cauchys
+      constructor
+      · exact FNet.instNeBot s
+      · intro U Uinunif
+        rcases cauchys U Uinunif with ⟨d₀, eq⟩
+        use s '' {d: D | d₀ ≤ d}
+        constructor
+        · simp only [FNet, Filter.mem_mk, Set.mem_setOf_eq]
+          use d₀
+          intro d d₀led
+          rw [mem_image]
+          use d
+          simp only [Set.mem_setOf_eq]
+          apply And.intro d₀led trivial
+        · intro sd sdin se sein
+          rcases sdin with ⟨d, d₀led, sdeq⟩
+          rcases sein with ⟨e, d₀lee, seeq⟩
+          rw [← sdeq, ← seeq]
+          rw [Set.mem_setOf_eq] at *
+          exact eq d e d₀led d₀lee
+    · intro cauchyf
+      rw [cauchy_iff'] at cauchyf
+      unfold CauchyNet
+      intro U Uinunif
+      rcases cauchyf.2 U Uinunif with ⟨A, AinF, eq⟩
+      simp only [FNet, Filter.mem_mk, Set.mem_setOf_eq] at AinF
+      rcases AinF with ⟨d₀, eqd⟩
+      use d₀
+      intro d e d₀led d₀lee
+      exact eq (s d) (eqd d d₀led) (s e) (eqd e d₀lee)
+
 /- ### Net associated to a filter ### -/
 
 /- Given any filter F in a set X we can construct a directed set associated to it as
@@ -232,6 +271,43 @@ theorem clpoint_filter_iff_net {X: Type*} [TopologicalSpace X] (F: Filter X) [h:
       · exact seinU
       · exact vVlee e.2.1
 
+/- We also have that given a filter in X a uniform space, it is satisfied that it is Cauchy if, and only
+   if, the associated net is Cauchy. -/
+lemma cauchy_filter_iff_net {X: Type*} [UniformSpace X] (F: Filter X) [h: Filter.NeBot F]:
+  Cauchy F ↔ CauchyNet (NetF F) := by
+    constructor
+    · intro cauchyf
+      rw [cauchy_iff'] at cauchyf
+      unfold CauchyNet
+      intro U Uinunif
+      rcases cauchyf.2 U Uinunif with ⟨A, AinF, eq⟩
+      have: ∃ (a: X), a ∈ A := by
+        have: A ≠ ∅ := by
+          intro Aempty
+          rw [Aempty] at AinF
+          have := empty_not_mem F
+          exact this AinF
+        rw [← nonempty_iff_ne_empty, nonempty_def] at this
+        assumption
+      rcases this with ⟨a, ainA⟩
+      use ⟨(a, A), And.intro ainA AinF⟩
+      intro d e aAled aAlee
+      unfold NetF
+      simp only [DirectedSetF_le_iff] at *
+      exact eq d.1.1 (aAled d.2.1) e.1.1 (aAlee e.2.1)
+    · intro cauchys
+      unfold CauchyNet at cauchys
+      rw [cauchy_iff']
+      constructor
+      · exact h
+      · intro U Uinunif
+        rcases cauchys U Uinunif with ⟨d₀, eq⟩
+        use d₀.1.2
+        constructor
+        · exact d₀.2.2
+        · intro x xind₀ y yind₀
+          exact eq ⟨(x, d₀.1.2), And.intro xind₀ d₀.2.2⟩ ⟨(y, d₀.1.2), And.intro yind₀ d₀.2.2⟩
+            (by rw[DirectedSetF_le_iff]) (by rw[DirectedSetF_le_iff])
 
 /- Furthermore, if A ∈ F, we can define a new directed set
     D' := {(x, E): X × Set X | x ∈ E ∈ F ∧ E ⊆ A},
