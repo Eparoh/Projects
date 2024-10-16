@@ -2,7 +2,6 @@ import Mathlib.Analysis.Normed.Module.Dual
 import Mathlib.Analysis.Normed.Module.WeakDual
 import Mathlib.Analysis.NormedSpace.HahnBanach.Separation
 import FunctionalAnalysis.MazurTheorem.Lemmas
-import Topology.Nets.Nets
 
 
 
@@ -405,7 +404,7 @@ theorem locallyconvex_dual_pair (X: Type*) [AddCommGroup X] [Module ℝ X] [Topo
 
 theorem weak_conv_nets {E F 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 𝕂 E] [AddCommGroup F] [Module 𝕂 F]
   (B: E →ₗ[𝕂] F →ₗ[𝕂] 𝕂) (D: Type u_1) (h: DirectedSet D) (s: D → WeakBilin B) (e : WeakBilin B) :
-  Net.Limit h s e ↔ ∀ (f : F), Net.Limit h ((fun (d : WeakBilin B) ↦ B d f) ∘ s) (B e f) := by
+  Net.Limit s e ↔ ∀ (f : F), Net.Limit ((fun (d : WeakBilin B) ↦ B d f) ∘ s) (B e f) := by
     constructor
     · intro slimite f
       exact (Net.continuous_iff_image_of_net_converges (fun (d : WeakBilin B) ↦ B d f) e).mp
@@ -457,10 +456,10 @@ theorem weak_conv_nets {E F 𝕂: Type*} [RCLike 𝕂] [AddCommGroup E] [Module 
 
 theorem weak_conv {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]
   (D: Type u_1) (h: DirectedSet D) (x: WeakSpace 𝕂 X) (s: D → WeakSpace 𝕂 X):
-  Net.Limit h s x ↔ ∀ (f : WeakDual 𝕂 X), Net.Limit h (f ∘ s) (f x) := by
+  Net.Limit s x ↔ ∀ (f : WeakDual 𝕂 X), Net.Limit (f ∘ s) (f x) := by
     exact weak_conv_nets ((topDualPairing 𝕂 X).flip) D h s x
 
 theorem weak_star_conv {X 𝕂 : Type*} [RCLike 𝕂] [NormedAddCommGroup X] [NormedSpace 𝕂 X]
   (D: Type (max u_1 u_2)) (h: DirectedSet D) (f: WeakDual 𝕂 X) (s: D → WeakDual 𝕂 X):
-  Net.Limit h s f ↔ ∀ (x : WeakSpace 𝕂 X), Net.Limit h (((topDualPairing 𝕂 X).flip x) ∘ s) (f x) := by
+  Net.Limit s f ↔ ∀ (x : WeakSpace 𝕂 X), Net.Limit (((topDualPairing 𝕂 X).flip x) ∘ s) (f x) := by
     exact weak_conv_nets (topDualPairing 𝕂 X) D h s f

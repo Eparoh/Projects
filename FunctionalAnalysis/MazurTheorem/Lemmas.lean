@@ -1,7 +1,7 @@
 import Mathlib.Algebra.Module.Submodule.Basic
 import Mathlib.LinearAlgebra.Basis.VectorSpace
 import FunctionalAnalysis.MazurTheorem.Defs
-import Topology.Nets.Nets
+import Topology.Nets.Theorems
 
 noncomputable section
 
